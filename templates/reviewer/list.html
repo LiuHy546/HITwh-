@@ -4,8 +4,18 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4" >
         <h2>待审核活动列表</h2>
-        <h2><a href="{{ url_for('reviewer.review_history') }}">查看审核历史</a></h2>
+        <a href="{{ url_for('reviewer.review_history') }}" class="btn btn-secondary">查看审核历史</a>
     </div>
+
+    <!-- 搜索表单开始 -->
+    <div class="mb-3">
+        <form class="d-flex" method="GET" action="{{ url_for('reviewer.review_list') }}">
+            <input class="form-control me-2" type="search" name="search" placeholder="搜索活动标题" value="{{ search_query if search_query is not none else '' }}" aria-label="Search">
+            <button class="btn btn-outline-success" type="submit">搜索</button>
+        </form>
+    </div>
+    <!-- 搜索表单结束 -->
+
     <div class="row">
         {% for activity in activities %}
         <div class="col-md-6 mb-4">

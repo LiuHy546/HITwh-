@@ -12,6 +12,12 @@ import io
 
 user_bp = Blueprint('user', __name__)
 
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @user_bp.route('/profile')
 @login_required
 def profile():
@@ -19,44 +25,62 @@ def profile():
     participations = Participation.query.filter_by(user_id=current_user.id).all()
     return render_template('profile.html', user=current_user, activities=user_activities, participations=participations)
 
-@user_bp.route('/activity/create', methods=['GET', 'POST'])
+@user_bp.route('/create_activity', methods=['GET', 'POST'])
 @login_required
 def create_activity():
     form = ActivityForm()
-    venues = Venue.query.all()
     activity_types = ActivityType.query.all()
-    form.venue.choices = [(v.id, v.name) for v in venues]
+    venues = Venue.query.all()
     form.activity_type.choices = [(t.id, t.name) for t in activity_types]
+    form.venue.choices = [(v.id, v.name) for v in venues]
 
     if request.method == 'POST':
-        title = request.form.get('title')
-        description = request.form.get('description')
-        start_time_str = request.form.get('start_time')
-        end_time_str = request.form.get('end_time')
-        venue_id = request.form.get('venue')
-        activity_type_id = request.form.get('activity_type')
-        max_participants = request.form.get('max_participants')
-        tags = request.form.get('tags')
+        if form.validate_on_submit():
+            title = form.title.data
+            description = form.description.data
+            activity_type_id = form.activity_type.data
+            venue_id = form.venue.data
+            start_time = form.start_time.data
+            end_time = form.end_time.data
+            max_participants = form.max_participants.data
+            tags = form.tags.data
+            poster = request.files.get('poster')
 
-        try:
-            start_time = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M')
-            start_time = start_time.replace(tzinfo=timezone(timedelta(hours=8))).astimezone(timezone.utc)
-            
-            end_time = datetime.strptime(end_time_str, '%Y-%m-%dT%H:%M')
-            end_time = end_time.replace(tzinfo=timezone(timedelta(hours=8))).astimezone(timezone.utc)
-            max_participants = int(max_participants)
-            venue_id = int(venue_id) if venue_id else None
-            activity_type_id = int(activity_type_id) if activity_type_id else None
-        except Exception as e:
-            flash('表单数据格式有误，请检查输入', 'danger')
-            return render_template('create_activity.html', form=form, venues=venues, activity_types=activity_types)
+            # 处理海报上传
+            poster_url = None
+            if poster and poster.filename:
+                if not allowed_file(poster.filename):
+                    flash('不支持的文件类型', 'warning')
+                    return render_template('create_activity.html', form=form, activity_types=activity_types, venues=venues)
+                
+                filename = secure_filename(poster.filename)
+                timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+                filename = f"{timestamp}_{filename}"
+                poster_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+                poster.save(poster_path)
+                poster_url = url_for('uploaded_file', filename=filename)
 
-        if venue_id:
+            # 验证时间
+            if end_time <= start_time:
+                flash('结束时间必须晚于开始时间', 'warning')
+                return render_template('create_activity.html', form=form, activity_types=activity_types, venues=venues)
+
+            # 验证参与人数
+            if max_participants <= 0:
+                flash('参与人数必须是正整数', 'warning')
+                return render_template('create_activity.html', form=form, activity_types=activity_types, venues=venues)
+
+            # 验证场地容量
             venue = Venue.query.get(venue_id)
             if not venue:
-                flash('选择的场地不存在', 'danger')
-                return render_template('create_activity.html', form=form, venues=venues, activity_types=activity_types)
+                flash('选择的场地不存在', 'warning')
+                return render_template('create_activity.html', form=form, activity_types=activity_types, venues=venues)
 
+            if max_participants > venue.capacity:
+                flash(f'活动最大参与人数 ({max_participants}) 超过场地容量 ({venue.capacity})。', 'warning')
+                return render_template('create_activity.html', form=form, activity_types=activity_types, venues=venues)
+
+            # 验证场地时间冲突
             conflicting_activities = Activity.query.filter(
                 Activity.venue_id == venue_id,
                 Activity.start_time < end_time,
@@ -64,60 +88,46 @@ def create_activity():
             ).count()
 
             if conflicting_activities > 0:
-                flash('场地在该时间段已被占用，请选择其他时间或场地。', 'danger')
-                return render_template('create_activity.html', form=form, venues=venues, activity_types=activity_types)
+                flash('场地在该时间段已被占用，请选择其他时间或场地。', 'warning')
+                return render_template('create_activity.html', form=form, activity_types=activity_types, venues=venues)
 
-            if max_participants > venue.capacity:
-                 flash(f'活动最大参与人数 ({max_participants}) 超过场地容量 ({venue.capacity})。', 'danger')
-                 return render_template('create_activity.html', form=form, venues=venues, activity_types=activity_types)
+            # 创建活动
+            activity = Activity(
+                title=title,
+                description=description,
+                activity_type_id=activity_type_id,
+                venue_id=venue_id,
+                start_time=start_time,
+                end_time=end_time,
+                max_participants=max_participants,
+                tags=tags,
+                poster_url=poster_url,
+                organizer_id=current_user.id,
+                status='pending',
+                current_participants=0
+            )
 
-        if activity_type_id:
-            activity_type = ActivityType.query.get(activity_type_id)
-            if not activity_type:
-                flash('选择的活动类型不存在', 'danger')
-                return render_template('create_activity.html', form=form, venues=venues, activity_types=activity_types)
+            # 根据用户角色设置审核状态
+            # 无论是谁创建的活动都需要审核员的审核
+            activity.review_status = 'pending'
+            activity.status = 'pending'
+            activity.review_comment = '等待审核员审核'
 
-        # 处理海报上传
-        poster_url = None
-        if 'poster' in request.files:
-            file = request.files['poster']
-            if file and file.filename:
-                # 生成安全的文件名
-                filename = secure_filename(file.filename)
-                # 使用时间戳和随机字符串确保文件名唯一
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                random_str = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz', k=6))
-                filename = f"{timestamp}_{random_str}_{filename}"
-                
-                # 确保上传目录存在
-                upload_folder = current_app.config['UPLOAD_FOLDER']
-                os.makedirs(upload_folder, exist_ok=True)
-                
-                # 保存文件
-                file_path = os.path.join(upload_folder, filename)
-                file.save(file_path)
-                
-                # 设置海报URL
-                poster_url = url_for('uploaded_file', filename=filename)
+            db.session.add(activity)
+            db.session.commit()
 
-        activity = Activity(
-            title=title,
-            description=description,
-            start_time=start_time,
-            end_time=end_time,
-            venue_id=venue_id,
-            activity_type_id=activity_type_id,
-            organizer_id=current_user.id,
-            max_participants=max_participants,
-            tags=tags,
-            poster_url=poster_url
-        )
-        db.session.add(activity)
-        db.session.commit()
-        flash('活动申请已提交，等待审核。', 'info')
-        return redirect(url_for('public.index'))
-
-    return render_template('create_activity.html', form=form, venues=venues, activity_types=activity_types)
+            flash('活动创建成功，等待审核员审核。', 'success')
+            return redirect(url_for('user.my_activities'))
+        else:
+            # 表单验证失败，flash 错误信息并重新渲染表单
+            for field, errors in form.errors.items():
+                for error in errors:
+                    flash(f'{form[field].label.text}: {error}', 'warning')
+    # GET请求显示创建表单 (或 POST 请求验证失败)
+    return render_template('create_activity.html', 
+                         form=form, 
+                         activity_types=activity_types,
+                         venues=venues)
 
 @user_bp.route('/activity/<int:activity_id>/join', methods=['POST'])
 @login_required
@@ -242,10 +252,16 @@ def edit_activity(activity_id):
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                 random_str = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz', k=6))
                 filename = f"{timestamp}_{random_str}_{filename}"
+                
+                # 确保上传目录存在
                 upload_folder = current_app.config['UPLOAD_FOLDER']
                 os.makedirs(upload_folder, exist_ok=True)
+                
+                # 保存文件
                 file_path = os.path.join(upload_folder, filename)
                 file.save(file_path)
+                
+                # 设置海报URL
                 poster_url = url_for('uploaded_file', filename=filename)
         # 支持移除海报
         if request.form.get('remove_poster') == '1':

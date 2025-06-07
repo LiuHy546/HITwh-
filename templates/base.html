@@ -228,7 +228,7 @@
                         <a class="nav-link" href="{{ url_for('admin.dashboard') }}">管理员仪表盘</a>
                     </li>
                     {% endif %}
-                    {% if current_user.is_reviewer or current_user.is_admin %}
+                    {% if current_user.is_reviewer %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('reviewer.review_list') }}">活动审核</a>
                     </li>

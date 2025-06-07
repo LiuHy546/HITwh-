@@ -8,14 +8,22 @@ reviewer_bp = Blueprint('reviewer', __name__)
 @reviewer_bp.before_request
 @login_required
 def before_request():
-    if not current_user.is_reviewer and not current_user.is_admin:
+    if not current_user.is_reviewer:
         flash('您没有权限访问此页面', 'error')
         return redirect(url_for('public.index'))
 
 @reviewer_bp.route('/review/list')
 def review_list():
-    activities = Activity.query.filter_by(review_status='pending').all()
-    return render_template('reviewer/list.html', activities=activities)
+    search_query = request.args.get('search', '')
+    
+    activities_query = Activity.query.filter_by(review_status='pending')
+    
+    if search_query:
+        activities_query = activities_query.filter(Activity.title.ilike(f'%{search_query}%'))
+        
+    activities = activities_query.order_by(Activity.created_at.desc()).all()
+    
+    return render_template('reviewer/list.html', activities=activities, search_query=search_query)
 
 @reviewer_bp.route('/review/<int:activity_id>', methods=['GET', 'POST'])
 def review_activity(activity_id):
