@@ -90,13 +90,13 @@ def edit_venue(venue_id):
 @admin_required
 def delete_venue(venue_id):
     venue = Venue.query.get_or_404(venue_id)
-    try:
+    # 检查是否有活动关联到此场地
+    if Activity.query.filter_by(venue_id=venue_id).first():
+        flash('无法删除场地，存在关联的活动。', 'warning')
+    else:
         db.session.delete(venue)
         db.session.commit()
-        flash('场地删除成功！', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'删除场地失败：{e}', 'danger')
+        flash('场地删除成功', 'success')
     return redirect(url_for('admin.venues'))
 
 @admin_bp.route('/activity_types')
@@ -140,14 +140,11 @@ def edit_activity_type(type_id):
 @admin_required
 def delete_activity_type(type_id):
     activity_type = ActivityType.query.get_or_404(type_id)
-    if activity_type.activities:
-        flash('无法删除该活动类型，因为有活动正在使用它。', 'danger')
-        return redirect(url_for('admin.activity_types'))
-    try:
+    # 检查是否有活动关联到此活动类型
+    if Activity.query.filter_by(activity_type_id=type_id).first():
+        flash('无法删除活动类型，存在关联的活动。', 'warning')
+    else:
         db.session.delete(activity_type)
         db.session.commit()
-        flash('活动类型删除成功！', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'删除活动类型失败：{e}', 'danger')
+        flash('活动类型删除成功', 'success')
     return redirect(url_for('admin.activity_types')) 
