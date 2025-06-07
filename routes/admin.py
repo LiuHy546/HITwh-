@@ -3,6 +3,8 @@ from flask_login import login_required, current_user
 from models import Activity, User, Venue, ActivityType
 from forms import VenueForm, ActivityTypeForm
 from extensions import db
+import random
+import string
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -40,9 +42,17 @@ def edit_user_permissions(user_id):
         flash('无法修改您自己的权限', 'warning')
         return redirect(url_for('admin.users'))
     
+    is_admin = request.form.get('is_admin') == 'true'
+    is_reviewer = request.form.get('is_reviewer') == 'true'
+
+    # 检查是否同时设置为管理员和审核员
+    if is_admin and is_reviewer:
+        flash('用户不能同时为管理员和审核员', 'warning')
+        return redirect(url_for('admin.users'))
+
     # 根据表单数据更新权限
-    user.is_admin = request.form.get('is_admin') == 'true'
-    user.is_reviewer = request.form.get('is_reviewer') == 'true'
+    user.is_admin = is_admin
+    user.is_reviewer = is_reviewer
     
     db.session.commit()
     flash(f'用户 {user.username} 的权限已更新', 'success')
@@ -147,4 +157,60 @@ def delete_activity_type(type_id):
         db.session.delete(activity_type)
         db.session.commit()
         flash('活动类型删除成功', 'success')
-    return redirect(url_for('admin.activity_types')) 
+    return redirect(url_for('admin.activity_types'))
+
+@admin_bp.route('/admin/user/delete/<int:user_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_user(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.is_admin:
+        flash('无法删除管理员用户', 'warning')
+    else:
+        db.session.delete(user)
+        db.session.commit()
+        flash('用户删除成功', 'success')
+    return redirect(url_for('admin.users'))
+
+@admin_bp.route('/admin/user/reset_password', methods=['POST'])
+@login_required
+@admin_required
+def reset_user_password():
+    user_id = request.form.get('user_id', type=int)
+    user = User.query.get_or_404(user_id)
+    
+    new_password = request.form.get('new_password')
+    
+    if not new_password:
+        flash('新密码不能为空', 'warning')
+        return redirect(url_for('admin.users'))
+
+    user.set_password(new_password)
+    db.session.commit()
+    flash(f'用户 {user.username} 的密码已成功修改', 'success')
+    return redirect(url_for('admin.users'))
+
+@admin_bp.route('/admin/user/edit/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_user(user_id):
+    user = User.query.get_or_404(user_id)
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        is_admin = request.form.get('is_admin') == 'on'
+        is_reviewer = request.form.get('is_reviewer') == 'on'
+        
+        # 检查是否同时设置为管理员和审核员
+        if is_admin and is_reviewer:
+            flash('用户不能同时为管理员和审核员', 'warning')
+            return render_template('admin_users.html', users=users, search_query=search_query)
+        
+        user.username = username
+        user.email = email
+        user.is_admin = is_admin
+        user.is_reviewer = is_reviewer
+        db.session.commit()
+        flash('用户信息更新成功', 'success')
+        return redirect(url_for('admin.users'))
+    return render_template('admin_users.html', users=users, search_query=search_query) 

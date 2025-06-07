@@ -203,6 +203,13 @@ def edit_activity(activity_id):
         activity_type_id = request.form.get('activity_type')
         max_participants = request.form.get('max_participants')
         tags = request.form.get('tags')
+        is_admin = request.form.get('is_admin') == 'true'
+        is_reviewer = request.form.get('is_reviewer') == 'true'
+
+        # 检查是否同时设置为管理员和审核员
+        if is_admin and is_reviewer:
+            flash('用户不能同时为管理员和审核员', 'warning')
+            return redirect(url_for('admin.users'))
 
         try:
             start_time = datetime.strptime(start_time_str, '%Y-%m-%dT%H:%M')

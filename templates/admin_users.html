@@ -15,7 +15,7 @@
         </div>
     </div>
 
-    <table class="table table-striped table-hover">
+    <table class="table table-striped table-hover table-bordered">
         <thead>
             <tr>
                 <th>ID</th>
@@ -35,7 +35,7 @@
                 <td>{{ user.username }}</td>
                 <td>{{ user.email }}</td>
                 <td>{{ user.department }}</td>
-                <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ user.created_at.strftime('%Y-%m-%d')}}</td>
                 <td>
                     {% if user.is_admin %}
                         <span class="badge bg-success">是</span>
@@ -52,17 +52,22 @@
                 </td>
                 <td>
                     {% if user.id != current_user.id %}
-                        <form method="POST" action="{{ url_for('admin.edit_user_permissions', user_id=user.id) }}" class="d-inline">
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="checkbox" id="isAdmin{{ user.id }}" name="is_admin" value="true" {% if user.is_admin %}checked{% endif %}>
-                                <label class="form-check-label" for="isAdmin{{ user.id }}">管理员</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="checkbox" id="isReviewer{{ user.id }}" name="is_reviewer" value="true" {% if user.is_reviewer %}checked{% endif %}>
-                                <label class="form-check-label" for="isReviewer{{ user.id }}">审核员</label>
-                            </div>
-                            <button type="submit" class="btn btn-sm btn-primary">更新权限</button>
-                        </form>
+                        <div class="d-flex align-items-center justify-content-center" style="gap: 8px; white-space: nowrap;">
+                            <form method="POST" action="{{ url_for('admin.edit_user_permissions', user_id=user.id) }}" class="d-flex align-items-center" style="gap: 8px;">
+                                <div class="form-check form-check-inline mb-0">
+                                    <input class="form-check-input" type="checkbox" id="isAdmin{{ user.id }}" name="is_admin" value="true" {% if user.is_admin %}checked{% endif %}>
+                                    <label class="form-check-label" for="isAdmin{{ user.id }}">管理员</label>
+                                </div>
+                                <div class="form-check form-check-inline mb-0">
+                                    <input class="form-check-input" type="checkbox" id="isReviewer{{ user.id }}" name="is_reviewer" value="true" {% if user.is_reviewer %}checked{% endif %}>
+                                    <label class="form-check-label" for="isReviewer{{ user.id }}">审核员</label>
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-primary">更新权限</button>
+                            </form>
+                            <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#resetPasswordModal" data-user-id="{{ user.id }}" data-user-username="{{ user.username }}">
+                                重置密码
+                            </button>
+                        </div>
                     {% else %}
                         <span class="text-muted">当前用户</span>
                     {% endif %}
@@ -73,4 +78,58 @@
     </table>
 
 </div>
+
+<!-- 重置密码模态框 -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-labelledby="resetPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="resetPasswordModalLabel">重置用户密码</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="resetPasswordForm" method="POST" action="{{ url_for('admin.reset_user_password') }}">
+                <div class="modal-body">
+                    <p>正在为用户 <strong id="modalUsername"></strong> 重置密码。</p>
+                    <div class="mb-3">
+                        <label for="newPasswordInput" class="form-label">新密码</label>
+                        <input type="password" class="form-control" id="newPasswordInput" name="new_password" required>
+                    </div>
+                    <input type="hidden" name="user_id" id="modalUserId">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">修改密码</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    var resetPasswordModal = document.getElementById('resetPasswordModal');
+    var resetPasswordForm = document.getElementById('resetPasswordForm');
+
+    resetPasswordModal.addEventListener('show.bs.modal', function (event) {
+        // 触发模态框的按钮
+        var button = event.relatedTarget;
+        // 从data-*属性中提取信息
+        var userId = button.getAttribute('data-user-id');
+        var username = button.getAttribute('data-user-username');
+
+        // 更新模态框内容
+        var modalTitle = resetPasswordModal.querySelector('.modal-title');
+        var modalBodyInput = resetPasswordModal.querySelector('#modalUserId');
+        var modalUsernameDisplay = resetPasswordModal.querySelector('#modalUsername');
+
+        modalTitle.textContent = '重置用户 ' + username + ' 的密码';
+        modalUsernameDisplay.textContent = username;
+        modalBodyInput.value = userId;
+
+        // 清空密码输入框
+        var newPasswordInput = resetPasswordModal.querySelector('#newPasswordInput');
+        newPasswordInput.value = '';
+    });
+</script>
+{% endblock %}
 {% endblock %} 
