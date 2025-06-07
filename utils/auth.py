@@ -10,10 +10,7 @@ def login_required(f):
             return jsonify({'error': 'No authorization header'}), 401
         
         try:
-            # Assuming token is in format: "Bearer <token>"
             token = auth_header.split(' ')[1]
-            # Here you would validate the token and get the user
-            # For now, we'll just set a mock user
             request.user = User.query.first()  # Replace with actual token validation
             return f(*args, **kwargs)
         except Exception as e:
