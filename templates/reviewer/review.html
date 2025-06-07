@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>审核活动</h2>
+    <div class="card">
+        <div class="card-body">
+            <h3>{{ activity.title }}</h3>
+            <div class="mb-4">
+                {% if activity.poster_url %}
+                <div class="text-center mb-4">
+                    <img src="{{ activity.poster_url }}" alt="活动海报" class="img-fluid rounded" style="width: 100%; height: auto;">
+                </div>
+                {% endif %}
+                <p><strong>组织者：</strong>{{ activity.organizer.username }}</p>
+                <p><strong>开始时间：</strong>{{ activity.start_time_cst.strftime('%Y-%m-%d %H:%M') }}</p>
+                <p><strong>结束时间：</strong>{{ activity.end_time_cst.strftime('%Y-%m-%d %H:%M') }}</p>
+                <p><strong>地点：</strong>{{ activity.venue.name }}</p>
+                <p><strong>最大参与人数：</strong>{{ activity.max_participants }}</p>
+                <p><strong>活动描述：</strong></p>
+                <p>{{ activity.description }}</p>
+            </div>
+
+            <form method="POST">
+                <div class="form-group">
+                    <label for="review_status">审核结果</label>
+                    <select class="form-control" id="review_status" name="review_status" required>
+                        <option value="approved" class="text-success" style="color: green;">通过</option>
+                        <option value="rejected" class="text-danger" style="color: red;">拒绝</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="review_comment">审核意见</label>
+                    <textarea class="form-control" id="review_comment" name="review_comment" rows="4" required></textarea>
+                </div>
+                <div class="d-flex align-items-center mb-3 mt-3">
+                    <button type="submit" class="btn btn-primary ml-auto ">提交审核</button>
+                    <a href="{{ url_for('reviewer.review_list') }}" class="btn btn-secondary ml-2" style="margin-left: 10px;">返回列表</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

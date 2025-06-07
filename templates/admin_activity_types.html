@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>活动类型管理</h2>
+    <a href="{{ url_for('admin.create_activity_type') }}" class="btn btn-primary mb-3">添加新类型</a>
+    
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>名称</th>
+                    <th>描述</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for type in activity_types %}
+                <tr>
+                    <td>{{ type.id }}</td>
+                    <td>{{ type.name }}</td>
+                    <td>{{ type.description }}</td>
+                    <td>
+                        <a href="{{ url_for('admin.edit_activity_type', type_id=type.id) }}" class="btn btn-sm btn-info">编辑</a>
+                        <form action="{{ url_for('admin.delete_activity_type', type_id=type.id) }}" method="POST" style="display: inline;">
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('确定要删除这个活动类型吗？')">删除</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %} 

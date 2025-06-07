@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}编辑活动 - 校园活动管理系统{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">编辑活动</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        <label for="title" class="form-label">活动标题</label>
+                        <input type="text" class="form-control" id="title" name="title" value="{{ form.title.data or activity.title }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">活动描述</label>
+                        <textarea class="form-control" id="description" name="description" rows="4" required>{{ form.description.data or activity.description }}</textarea>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="start_time" class="form-label">开始时间</label>
+                            <input type="datetime-local" class="form-control" id="start_time" name="start_time" value="{{ (form.start_time.data or activity.start_time).strftime('%Y-%m-%dT%H:%M') }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="end_time" class="form-label">结束时间</label>
+                            <input type="datetime-local" class="form-control" id="end_time" name="end_time" value="{{ (form.end_time.data or activity.end_time).strftime('%Y-%m-%dT%H:%M') }}" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="venue" class="form-label">活动地点</label>
+                        {{ form.venue(class="form-select") }}
+                        {% for error in form.venue.errors %}
+                            <span class="text-danger">[{{ error }}]</span>
+                        {% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="max_participants" class="form-label">最大参与人数</label>
+                        <input type="number" class="form-control" id="max_participants" name="max_participants" value="{{ form.max_participants.data or activity.max_participants }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tags" class="form-label">活动标签（用逗号分隔）</label>
+                        <input type="text" class="form-control" id="tags" name="tags" value="{{ form.tags.data or activity.tags }}">
+                    </div>
+                    <div class="mb-3">
+                        {{ form.poster.label }}
+                        {{ form.poster(class="form-control", onchange="previewImage(this)") }}
+                        {% for error in form.poster.errors %}
+                        <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                        <small class="form-text text-muted">支持jpg、jpeg、png格式的图片</small>
+                        <div id="imagePreview" class="mt-2" style="{% if activity.poster_url %}display:block;{% else %}display:none;{% endif %}">
+                            <img id="preview" src="{{ activity.poster_url if activity.poster_url else '#' }}" alt="海报预览" class="img-fluid rounded" style="max-height: 300px;">
+                            <button type="button" class="btn btn-sm btn-danger mt-2" onclick="removeImage()">移除图片</button>
+                        </div>
+                        <input type="hidden" id="remove_poster" name="remove_poster" value="0">
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">保存修改</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+function previewImage(input) {
+    const preview = document.getElementById('preview');
+    const previewDiv = document.getElementById('imagePreview');
+    document.getElementById('remove_poster').value = '0';
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            previewDiv.style.display = 'block';
+        }
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        previewDiv.style.display = 'none';
+    }
+}
+function removeImage() {
+    const input = document.querySelector('input[type="file"]');
+    const preview = document.getElementById('preview');
+    const previewDiv = document.getElementById('imagePreview');
+    input.value = '';
+    preview.src = '#';
+    previewDiv.style.display = 'none';
+    document.getElementById('remove_poster').value = '1';
+}
+</script>
+{% endblock %} 

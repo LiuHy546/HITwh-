@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}管理后台 - 校园活动管理系统{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2>管理员控制面板</h2>
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">场地管理</h5>
+                    <p class="card-text">管理活动场地信息</p>
+                    <a href="{{ url_for('admin.venues') }}" class="btn btn-primary">管理场地</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">活动类型管理</h5>
+                    <p class="card-text">管理活动类型信息</p>
+                    <a href="{{ url_for('admin.activity_types') }}" class="btn btn-primary">管理活动类型</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">用户管理</h5>
+                    <p class="card-text">管理用户信息及权限</p>
+                    <a href="{{ url_for('admin.users') }}" class="btn btn-primary">管理用户</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

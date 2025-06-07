@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}个人中心 - 校园活动管理系统{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2>个人中心</h2>
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">{{ user.username }}</h5>
+            <p class="card-text">邮箱：{{ user.email }}</p>
+            <p class="card-text">院系：{{ user.department }}</p>
+            <p class="card-text">注册时间：{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">我发起的活动</div>
+                <div class="card-body">
+                    {% if activities %}
+                        {% for activity in activities %}
+                        <div class="mb-2">
+                            <a href="{{ url_for('public.activity_detail', activity_id=activity.id) }}">{{ activity.title }}</a>
+                            <span class="text-muted small">({{ activity.start_time.strftime('%Y-%m-%d %H:%M') }})</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">暂无</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">我参与的活动</div>
+                <div class="card-body">
+                    {% if participations %}
+                        {% for p in participations %}
+                        <div class="mb-2">
+                            {% if p.activity %}
+                                <a href="{{ url_for('public.activity_detail', activity_id=p.activity.id) }}">{{ p.activity.title }}</a>
+                                <span class="text-muted small">({{ p.activity.start_time.strftime('%Y-%m-%d %H:%M') }})</span>
+                            {% else %}
+                                <span class="text-muted">已删除的活动</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">暂无</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

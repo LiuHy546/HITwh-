@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>创建活动</h2>
+    <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        <div class="form-group mb-3">
+            {{ form.title.label }}
+            {{ form.title(class="form-control") }}
+            {% for error in form.title.errors %}
+            <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+        </div>
+        <div class="form-group mb-3">
+            {{ form.description.label }}
+            {{ form.description(class="form-control", rows="5") }}
+            {% for error in form.description.errors %}
+            <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+        </div>
+        <div class="form-group mb-3">
+            {{ form.start_time.label }}
+            {{ form.start_time(class="form-control", type="datetime-local") }}
+            {% for error in form.start_time.errors %}
+            <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+        </div>
+        <div class="form-group mb-3">
+            {{ form.end_time.label }}
+            {{ form.end_time(class="form-control", type="datetime-local") }}
+            {% for error in form.end_time.errors %}
+            <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+        </div>
+        <div class="form-group mb-3">
+            {{ form.venue.label }}
+            {{ form.venue(class="form-control") }}
+            {% for error in form.venue.errors %}
+            <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+        </div>
+        <div class="form-group mb-3">
+            {{ form.activity_type.label }}
+            {{ form.activity_type(class="form-control") }}
+            {% for error in form.activity_type.errors %}
+            <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+        </div>
+        <div class="form-group mb-3">
+            {{ form.max_participants.label }}
+            {{ form.max_participants(class="form-control") }}
+            {% for error in form.max_participants.errors %}
+            <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+        </div>
+        <div class="form-group mb-3">
+            {{ form.tags.label }}
+            {{ form.tags(class="form-control", placeholder="用逗号分隔多个标签") }}
+            {% for error in form.tags.errors %}
+            <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+        </div>
+        <div class="form-group mb-3">
+            {{ form.poster.label }}
+            {{ form.poster(class="form-control", onchange="previewImage(this)") }}
+            {% for error in form.poster.errors %}
+            <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+            <small class="form-text text-muted">支持jpg、jpeg、png格式的图片</small>
+            <div id="imagePreview" class="mt-2" style="display: none;">
+                <img id="preview" src="#" alt="海报预览" class="img-fluid rounded" style="max-height: 300px;">
+                <button type="button" class="btn btn-sm btn-danger mt-2" onclick="removeImage()">移除图片</button>
+            </div>
+        </div>
+        {{ form.submit(class="btn btn-primary") }}
+        <a href="{{ url_for('public.index') }}" class="btn btn-secondary">返回</a>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+function previewImage(input) {
+    const preview = document.getElementById('preview');
+    const previewDiv = document.getElementById('imagePreview');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            previewDiv.style.display = 'block';
+        }
+        
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        previewDiv.style.display = 'none';
+    }
+}
+
+function removeImage() {
+    const input = document.querySelector('input[type="file"]');
+    const preview = document.getElementById('preview');
+    const previewDiv = document.getElementById('imagePreview');
+    
+    input.value = '';
+    preview.src = '#';
+    previewDiv.style.display = 'none';
+}
+</script>
+{% endblock %} 

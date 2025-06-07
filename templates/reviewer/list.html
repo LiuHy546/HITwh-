@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4" >
+        <h2>待审核活动列表</h2>
+        <h2><a href="{{ url_for('reviewer.review_history') }}">查看审核历史</a></h2>
+    </div>
+    <div class="row">
+        {% for activity in activities %}
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ activity.title }}</h5>
+                    <p class="card-text">{{ activity.description[:60] }}...</p>
+                    <p><strong>组织者：</strong>{{ activity.organizer.username }}</p>
+                    <p><strong>开始时间：</strong>{{ activity.start_time_cst.strftime('%Y-%m-%d %H:%M') }}</p>
+                    <p><strong>结束时间：</strong>{{ activity.end_time_cst.strftime('%Y-%m-%d %H:%M') }}</p>
+                    <p><strong>地点：</strong>{{ activity.venue.name }}</p>
+                    <a href="{{ url_for('reviewer.review_activity', activity_id=activity.id) }}" class="btn btn-primary">审核活动</a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <p class="text-center">暂无待审核的活动</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

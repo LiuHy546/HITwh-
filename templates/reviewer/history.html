@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>审核历史</h2>
+    <div class="row">
+        {% for activity in activities %}
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ activity.title }}</h5>
+                    <p class="card-text">{{ activity.description[:200] }}...</p>
+                    <p><strong>组织者：</strong>{{ activity.organizer.username }}</p>
+                    <p><strong>审核状态：</strong>
+                        {% if activity.review_status == 'approved' %}
+                        <span class="badge badge-success">已通过</span>
+                        {% else %}
+                        <span class="badge badge-danger">已拒绝</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>审核时间：</strong>{{ activity.review_time.strftime('%Y-%m-%d %H:%M') }}</p>
+                    <p><strong>审核意见：</strong>{{ activity.review_comment }}</p>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <p class="text-center">暂无审核历史</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

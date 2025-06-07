@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}校园活动社交平台{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .flash-messages {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .flash-message {
+            margin-bottom: 10px;
+            min-width: 300px;
+        }
+        .navbar { margin-bottom: 20px; }
+
+        /* 热门活动侧边栏固定定位 */
+        .hot-activities-sidebar {
+            position: fixed;
+            top: 100px; /* 根据导航栏高度调整，使其在导航栏下方 */
+            right: 20px; /* 距离页面右侧的距离 */
+            width: 300px; /* 热门活动侧边栏的宽度 */
+            z-index: 900; /* 确保它在内容之上 */
+            background-color: #fff; /* 添加背景色，防止内容穿透 */
+            padding: 15px; /* 增加内边距 */
+            border-radius: 5px; /* 圆角 */
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); /* 添加阴影 */
+        }
+
+        .main-content-area {
+            margin-right: 340px; /* 为固定侧边栏留出空间 (侧边栏宽度 + right + padding) */
+        }
+        
+        .hot-activities-sidebar .list-group-item {
+            border: none; /* 移除列表项边框 */
+            padding: 10px 0; /* 调整列表项内边距 */
+        }
+
+        .hot-activities-sidebar .list-group-item a {
+            font-weight: bold; /* 链接文字加粗 */
+            color: #007bff; /* 链接颜色 */
+            text-decoration: none; /* 移除下划线 */
+        }
+
+        .hot-activities-sidebar .list-group-item a:hover {
+            text-decoration: underline; /* 悬停时显示下划线 */
+        }
+
+        .hot-activities-sidebar .card-text.small i {
+            margin-right: 5px; /* 图标和文字之间的间距 */
+        }
+
+        /* Adjustments for wider main content */
+        @media (min-width: 992px) { /* Apply on larger screens */
+            .container {
+                max-width: 1200px; /* Increase container max-width if needed */
+            }
+            .main-content-area {
+                margin-right: 340px; /* Ensure sufficient space on larger screens */
+            }
+        }
+        
+        /* Styles for the main activity feed items */
+        .feed-item {
+            display: flex; /* Use flexbox to arrange content and poster */
+            border-bottom: 1px solid #ebebeb; /* Light gray border at the bottom */
+            padding: 20px 0; /* Vertical padding */
+            margin-bottom: 0; /* Remove default margin */
+            align-items: flex-start; /* Align items to the top */
+        }
+
+        .feed-item:last-child {
+            border-bottom: none; /* No border for the last item */
+        }
+
+        .feed-item-content {
+            flex: 2 1 0%; /* Content takes 2/3 of available space */
+            margin-right: 20px; /* Space between content and poster */
+        }
+
+        .feed-item-poster {
+            flex: 1 1 0%; /* Poster takes 1/3 of available space */
+            /* position: relative; */ /* Not strictly needed if image is not absolute */
+            overflow: hidden; /* Hide any overflow */
+            border-radius: 4px; /* Slightly rounded corners */
+             /* Removed padding-top hack */
+            /* padding-top: 150%; */ 
+            /* height: 0; */
+        }
+        
+        .feed-item-poster img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 2/1; /* 设置宽高比为2:1 */
+            object-fit: cover;
+        }
+
+        .feed-item-title {
+            font-size: 1.2em; /* Larger font size for title */
+            font-weight: bold; /* Bold title */
+            margin-bottom: 8px; /* Space below title */
+            line-height: 1.4; /* Improve readability */
+        }
+
+        .feed-item-title a {
+            color: #1a1a1a; /* Darker color for title link */
+            text-decoration: none; /* Remove underline */
+        }
+
+        .feed-item-title a:hover {
+            color: #007bff; /* Highlight color on hover */
+        }
+
+        .feed-item-description {
+            font-size: 0.95em; /* Slightly smaller font for description */
+            color: #5e5e5e; /* Grayish color for description */
+            margin-bottom: 15px; /* Space below description */
+            line-height: 1.6; /* Improve readability */
+        }
+
+        .feed-item-info {
+            display: flex; /* Use flexbox for layout */
+            align-items: center; /* Vertically align items */
+            font-size: 0.9em; /* Smaller font for info line */
+            color: #8590a6; /* Light grayish color for info */
+        }
+
+        .feed-item-info span {
+            margin-right: 20px; /* Space between info items */
+        }
+
+        .feed-item-info i {
+            margin-right: 5px; /* Space between icon and text */
+            font-size: 1.1em; /* Slightly larger icons */
+            color: #8590a6; /* Consistent color for icons */
+        }
+
+        .feed-item-link:hover {
+            color: #007bff; /* Highlight color on hover */
+        }
+        
+        /* Style for liked heart icon */
+        /* .like-button.liked i.bi-heart {
+            color: red;
+        } */
+
+        .activity-poster-container {
+            width: 100%;
+            max-height: 400px; /* Limit max height */
+            overflow: hidden;
+            margin-bottom: 20px; /* Space below the poster */
+        }
+
+        .activity-poster-img {
+            display: block;
+            width: 100%;
+            height: auto; /* Maintain aspect ratio */
+            object-fit: cover; /* Cover the container */
+        }
+
+        /* Basic styling for the detail page similar to Zhihu feed items */
+        .activity-detail-content {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .activity-detail-sidebar {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.1);
+            padding: 20px;
+        }
+
+        .activity-detail-content h2, .activity-detail-content h5 {
+            margin-bottom: 15px;
+        }
+
+        .activity-detail-content .text-muted p i {
+            width: 20px; /* Align icons */
+            text-align: center;
+            margin-right: 5px;
+        }
+
+        .activity-detail-content .badge {
+            margin-right: 5px;
+        }
+
+        .activity-detail-sidebar .list-group-item {
+            border: none;
+            padding-left: 0;
+            padding-right: 0;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('public.index') }}">校园活动社交平台</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('public.index') }}">首页</a>
+                    </li>
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user.create_activity') }}">创建活动</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user.my_activities') }}">我的活动</a>
+                    </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav">
+                    {% if current_user.is_authenticated %}
+                    {% if current_user.is_admin %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin.dashboard') }}">管理员仪表盘</a>
+                    </li>
+                    {% endif %}
+                    {% if current_user.is_reviewer or current_user.is_admin %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('reviewer.review_list') }}">活动审核</a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('user.profile') }}">{{ current_user.username }}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.logout') }}">退出</a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.login') }}">登录</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.register') }}">注册</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show flash-message" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer class="footer mt-5 py-3 bg-light">
+        <div class="container text-center">
+            <span class="text-muted">© 2025 校园活动社交平台</span>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        window.addEventListener('load', function () {
+            // Auto-dismiss Bootstrap alerts after 2 seconds
+            var alertList = document.querySelectorAll('.alert');
+            alertList.forEach(function(alert) {
+                // Initialize the alert
+                var bsAlert = new bootstrap.Alert(alert);
+                
+                setTimeout(function() {
+                    bsAlert.close();
+                }, 2000); // 2000 milliseconds = 2 seconds
+            });
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.like-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const activityId = this.getAttribute('data-activity-id');
+                    const likesCountSpan = this.querySelector('.likes-count');
+                    const likeButton = this; // Reference to the button span
+                    const heartIcon = likeButton.querySelector('svg'); // Get the SVG element
+
+                    fetch(`/activity/${activityId}/like`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            // Include CSRF token if needed, e.g., from a meta tag
+                            // 'X-CSRFToken': csrfToken
+                        },
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            // Handle HTTP errors (e.g., 401 Unauthorized)
+                            return response.json().then(data => {
+                                // Assuming the backend returns a JSON with a message field on error
+                                throw new Error(data.message || '操作失败');
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            likesCountSpan.textContent = data.likes;
+                            if (data.liked) {
+                                // Change SVG fill to red
+                                heartIcon.setAttribute('fill', '#dc3545');
+                                likeButton.classList.add('liked'); // Keep class for consistency if needed elsewhere
+                            } else {
+                                // Change SVG fill to default gray
+                                heartIcon.setAttribute('fill', '#8590a6');
+                                likeButton.classList.remove('liked'); // Keep class
+                            }
+                        } else if (data.message) {
+                            // Handle application-level errors (e.g., not logged in)
+                             alert(data.message); // Or use a more sophisticated notification
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error liking activity:', error);
+                        alert('操作失败: ' + error.message); // Show error to user
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html> 

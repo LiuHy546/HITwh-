@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}场地管理 - 校园活动管理系统{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2>场地管理</h2>
+    <p>
+        <a href="{{ url_for('admin.create_venue') }}" class="btn btn-primary">新增场地</a>
+    </p>
+
+    {% if venues %}
+    <table class="table table-striped table-hover mt-3">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>名称</th>
+                <th>地址</th>
+                <th>容量</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for venue in venues %}
+            <tr>
+                <td>{{ venue.id }}</td>
+                <td>{{ venue.name }}</td>
+                <td>{{ venue.address }}</td>
+                <td>{{ venue.capacity }}</td>
+                <td>
+                    <a href="{{ url_for('admin.edit_venue', venue_id=venue.id) }}" class="btn btn-sm btn-outline-primary me-2">编辑</a>
+                    <form method="POST" action="{{ url_for('admin.delete_venue', venue_id=venue.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('确定要删除场地 {{ venue.name }} 吗？')">删除</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="alert alert-info mt-4">
+        暂无场地信息。
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 
