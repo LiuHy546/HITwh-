@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}我的通知{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>我的通知</h2>
+    {% if notifications %}
+    <ul class="list-group">
+        {% for notification in notifications %}
+        {% set item_class = "" %}
+        {% set icon_class = "" %}
+        {% set icon_color = "" %}
+        {% set message_text = "" %}
+        {% set show_view_activity_button = false %}
+
+        {# Handle activity review notifications (new format with notification_type) #}
+        {% if notification.notification_type == 'activity_review' %}
+            {% set show_view_activity_button = true %}
+            {% set activity_title = notification.activity_title | default('未知活动') %}
+            {% set review_comment = notification.review_comment | default('无') %}
+            {% set review_status_text = notification.review_status | default('未知') %}
+
+            {% if notification.review_status == 'approved' %}
+                {% set item_class = "list-group-item-success" %}
+                {% set icon_class = "bi bi-check-circle-fill" %}
+                {% set icon_color = "text-success" %}
+                {% set message_text = "您的活动 \"" ~ activity_title ~ "\" 已通过审核。" %}
+            {% elif notification.review_status == 'rejected' %}
+                {% set item_class = "list-group-item-danger" %}
+                {% set icon_class = "bi bi-x-circle-fill" %}
+                {% set icon_color = "text-danger" %}
+                {% set message_text = "您的活动 \"" ~ activity_title ~ "\" 未通过审核。审核意见：" ~ review_comment %}
+            {% else %}
+                {# Fallback for unexpected review statuses (e.g., if review_status is 'pending' but type is review) #}
+                {% set item_class = "list-group-item-info" %}
+                {% set icon_class = "bi bi-info-circle-fill" %}
+                {% set icon_color = "text-info" %}
+                {% set message_text = "您的活动 \"" ~ activity_title ~ "\" 审核状态为: " ~ review_status_text ~ "." %}
+            {% endif %}
+        {# Handle older review notifications without explicit 'activity_review' type, but with review status #}
+        {% elif notification.review_status is not none %}
+            {% set show_view_activity_button = true %}
+            {% set activity_title = notification.activity_title | default('未知活动') %}
+            {% set review_comment = notification.review_comment | default('无') %}
+            {% set review_status_text = notification.review_status | default('未知') %}
+
+            {% if notification.review_status == 'approved' %}
+                {% set item_class = "list-group-item-success" %}
+                {% set icon_class = "bi bi-check-circle-fill" %}
+                {% set icon_color = "text-success" %}
+                {% set message_text = "您的活动 \"" ~ activity_title ~ "\" 已通过审核。" %}
+            {% elif notification.review_status == 'rejected' %}
+                {% set item_class = "list-group-item-danger" %}
+                {% set icon_class = "bi bi-x-circle-fill" %}
+                {% set icon_color = "text-danger" %}
+                {% set message_text = "您的活动 \"" ~ activity_title ~ "\" 未通过审核。审核意见：" ~ review_comment %}
+            {% else %}
+                {# Fallback for any other existing review status #}
+                {% set item_class = "list-group-item-info" %}
+                {% set icon_class = "bi bi-info-circle-fill" %}
+                {% set icon_color = "text-info" %}
+                {% set message_text = "您的活动 \"" ~ activity_title ~ "\" 审核状态为: " ~ review_status_text ~ "." %}
+            {% endif %}
+        {% else %}
+            {# Truly generic or unexpected notifications #}
+            {% set item_class = "list-group-item-info" %}
+            {% set icon_class = "bi bi-bell-fill" %}
+            {% set icon_color = "text-primary" %}
+            {% set message_text = "您有一条新通知。" %}
+        {% endif %}
+
+        <li class="list-group-item d-flex justify-content-between align-items-start {% if not notification.is_read %}fw-bold{% endif %} {{ item_class }}">
+            <div class="d-flex align-items-center flex-grow-1">
+                <i class="{{ icon_class }} {{ icon_color }} me-2" style="font-size: 1.25rem;"></i>
+                <div>
+                    <p class="mb-0">{{ message_text }}</p>
+                    <small class="text-muted">{{ notification.display_created_at }}</small>
+                </div>
+            </div>
+            <div class="d-flex align-items-center ms-auto">
+                {% if show_view_activity_button and notification.activity_id %}
+                <a href="{{ url_for('public.activity_detail', activity_id=notification.activity_id) }}" class="btn btn-sm btn-outline-secondary me-2">查看活动</a>
+                {% endif %}
+                {% if not notification.is_read %}
+                <form method="POST" action="{{ url_for('user.mark_notification_as_read', notification_id=notification.id) }}">
+                    <button type="submit" class="btn btn-sm btn-outline-primary">标记为已读</button>
+                </form>
+                {% else %}
+                <span class="badge bg-secondary">已读</span>
+                {% endif %}
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-center text-muted">您目前没有新的通知。</p>
+    {% endif %}
+</div>
+{% endblock %} 

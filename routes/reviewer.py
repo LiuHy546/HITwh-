@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 from flask_login import login_required, current_user
-from models import Activity, db
+from models import Activity, db, Notification
 from datetime import datetime, timezone
 
 reviewer_bp = Blueprint('reviewer', __name__)
@@ -41,11 +41,28 @@ def review_activity(activity_id):
         if review_status == 'approved':
             activity.status = 'active'
             activity.is_approved = True
+            notification_type = 'activity_review'
+            review_status_msg = '通过审核'
+            review_comment_msg = review_comment if review_comment else '无'
         else:
             activity.status = 'rejected'
             activity.is_approved = False
+            notification_type = 'activity_review'
+            review_status_msg = '未通过审核'
+            review_comment_msg = review_comment if review_comment else '无'
             
+        # 创建通知
+        notification = Notification(
+            user_id=activity.organizer_id,
+            activity_id=activity.id,
+            notification_type=notification_type,
+            activity_title=activity.title,
+            review_status=review_status,
+            review_comment=review_comment_msg
+        )
+        db.session.add(notification)
         db.session.commit()
+        
         flash('审核完成', 'success')
         return redirect(url_for('reviewer.review_list'))
         

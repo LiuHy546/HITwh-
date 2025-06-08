@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app, make_response
 from flask_login import login_required, current_user
 from datetime import datetime, timezone, timedelta
-from models import Activity, Participation, Comment, Venue, ActivityType
+from models import Activity, Participation, Comment, Venue, ActivityType, Notification
 from forms import ActivityForm
 from extensions import db
 from werkzeug.utils import secure_filename
@@ -178,8 +178,18 @@ def add_comment(activity_id):
 @login_required
 def edit_activity(activity_id):
     activity = Activity.query.options(db.joinedload(Activity.venue)).get_or_404(activity_id)
+    
+    # 允许组织者编辑自己的活动，或管理员编辑任何活动
+    # 并且允许组织者编辑审核状态为 'rejected' 的活动
     if activity.organizer_id != current_user.id and not current_user.is_admin:
         abort(403)
+    
+    # 如果活动处于已拒绝状态，组织者可以编辑它并重新提交
+    if activity.organizer_id == current_user.id and activity.review_status == 'rejected':
+        # 允许编辑，但不需要额外的权限检查
+        pass
+    elif activity.organizer_id != current_user.id and not current_user.is_admin:
+        abort(403) # 如果不是组织者也不是管理员，且活动未被拒绝，则不允许编辑
 
     form = ActivityForm(obj=activity)
 
@@ -284,8 +294,18 @@ def edit_activity(activity_id):
         activity.tags = tags
         activity.poster_url = poster_url
 
+        # 如果活动之前被拒绝，重新提交时将其审核状态重置为pending
+        if activity.review_status == 'rejected':
+            activity.review_status = 'pending'
+            activity.status = 'pending'
+            activity.reviewer_id = None
+            activity.review_time = None
+            activity.review_comment = '等待审核员重新审核'
+            flash('活动已重新提交，等待审核员审核。 ', 'success')
+        else:
+            flash('活动更新成功！', 'success')
+
         db.session.commit()
-        flash('活动更新成功！', 'success')
         return redirect(url_for('public.activity_detail', activity_id=activity.id))
 
     return render_template('edit_activity.html', form=form, activity=activity)
@@ -492,4 +512,40 @@ def generate_csv_data(activity):
             c.likes_count or 0
         ])
 
-    return output.getvalue() 
+    return output.getvalue()
+
+@user_bp.route('/notifications')
+@login_required
+def notifications():
+    notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).all()
+    
+    cst = timezone(timedelta(hours=8))
+    for notification in notifications:
+        # Debugging prints
+        print(f"Notification ID: {notification.id}")
+        print(f"  Type: {notification.notification_type}")
+        print(f"  Title: {notification.activity_title}")
+        print(f"  Status: {notification.review_status}")
+        print(f"  Comment: {notification.review_comment}")
+        
+        if notification.created_at:
+            # Ensure created_at is timezone-aware before converting
+            if notification.created_at.tzinfo is None:
+                notification.created_at = notification.created_at.replace(tzinfo=timezone.utc)
+            notification.display_created_at = notification.created_at.astimezone(cst).strftime('%Y-%m-%d %H:%M')
+        else:
+            notification.display_created_at = 'N/A'
+
+    return render_template('user/notifications.html', notifications=notifications)
+
+@user_bp.route('/notifications/<int:notification_id>/mark_read', methods=['POST'])
+@login_required
+def mark_notification_as_read(notification_id):
+    notification = Notification.query.get_or_404(notification_id)
+    if notification.user_id != current_user.id:
+        abort(403)
+    
+    notification.is_read = True
+    db.session.commit()
+    flash('通知已标记为已读', 'success')
+    return redirect(url_for('user.notifications')) 

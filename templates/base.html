@@ -223,21 +223,32 @@
                 </ul>
                 <ul class="navbar-nav">
                     {% if current_user.is_authenticated %}
-                    {% if current_user.is_admin %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('admin.dashboard') }}">管理员仪表盘</a>
-                    </li>
-                    {% endif %}
-                    {% if current_user.is_reviewer %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('reviewer.review_list') }}">活动审核</a>
-                    </li>
-                    {% endif %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('user.profile') }}">{{ current_user.username }}</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('auth.logout') }}">退出</a>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            {{ current_user.username }}
+                            {% set unread_count = current_user.notifications|selectattr('is_read', 'equalto', false)|list|length %}
+                            {% if unread_count > 0 %}
+                            <span class="badge bg-danger">{{ unread_count }}</span>
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('user.profile') }}">个人中心</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('user.my_activities') }}">我的活动</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('user.notifications') }}">
+                                通知
+                                {% if unread_count > 0 %}
+                                <span class="badge bg-danger float-end">{{ unread_count }}</span>
+                                {% endif %}
+                            </a></li>
+                            {% if current_user.is_admin %}
+                            <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}">管理后台</a></li>
+                            {% endif %}
+                            {% if current_user.is_reviewer %}
+                            <li><a class="dropdown-item" href="{{ url_for('reviewer.review_list') }}">审核活动</a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">退出</a></li>
+                        </ul>
                     </li>
                     {% else %}
                     <li class="nav-item">

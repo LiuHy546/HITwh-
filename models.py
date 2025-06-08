@@ -129,4 +129,20 @@ class Like(db.Model):
     created_at = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc))
 
     # 组合唯一索引，确保一个用户只能给一个活动点赞一次
-    __table_args__ = (db.UniqueConstraint('user_id', 'activity_id', name='_user_activity_uc'),) 
+    __table_args__ = (db.UniqueConstraint('user_id', 'activity_id', name='_user_activity_uc'),)
+
+# 通知模型
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    activity_id = db.Column(db.Integer, db.ForeignKey('activity.id', ondelete='CASCADE'), nullable=False)
+    notification_type = db.Column(db.String(50), nullable=False, default='general') # 例如：activity_review, participation, comment
+    activity_title = db.Column(db.String(200))
+    review_status = db.Column(db.String(20)) # approved, rejected
+    review_comment = db.Column(db.Text)
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc))
+    
+    # 关系
+    user = db.relationship('User', backref='notifications')
+    activity = db.relationship('Activity', backref='notifications', lazy=True) 

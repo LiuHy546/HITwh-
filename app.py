@@ -33,6 +33,7 @@ def create_app():
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
+    migrate = Migrate(app, db)
     
     # Import models
     from models import User

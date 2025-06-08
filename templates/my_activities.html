@@ -45,7 +45,17 @@
                                 <small class="text-muted">
                                     时间：{{ activity.start_time.strftime('%Y-%m-%d %H:%M') }}
                                 </small>
-                                <a href="{{ url_for('public.activity_detail', activity_id=activity.id) }}" class="btn btn-primary btn-sm">查看详情</a>
+                                <div>
+                                    {% if activity.review_status == 'rejected' %}
+                                    <span class="badge bg-danger me-2">已拒绝</span>
+                                    <a href="{{ url_for('user.edit_activity', activity_id=activity.id) }}" class="btn btn-warning btn-sm me-2">重新编辑/提交</a>
+                                    {% elif activity.review_status == 'pending' %}
+                                    <span class="badge bg-info me-2">待审核</span>
+                                    {% elif activity.review_status == 'approved' %}
+                                    <span class="badge bg-success me-2">已通过</span>
+                                    {% endif %}
+                                    <a href="{{ url_for('public.activity_detail', activity_id=activity.id) }}" class="btn btn-primary btn-sm">查看详情</a>
+                                </div>
                             </div>
                         </div>
                     </div>
